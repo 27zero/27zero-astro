@@ -1,0 +1,64 @@
+---
+import { sanity } from "../../lib/sanity";
+
+export async function getStaticPaths() {
+  const posts = await sanity.fetch(`
+    *[_type == "post"]{
+      slug
+    }
+  `);
+
+  return posts.map((post) => ({
+    params: {
+      slug: post.slug.current,
+    },
+  }));
+}
+
+const { slug } = Astro.params;
+
+const post = await sanity.fetch(
+  `
+  *[_type == "post" && slug.current == $slug][0]{
+    title,
+    publishedAt,
+    body
+  }
+`,
+  { slug }
+);
+---
+
+<html lang="es">
+  <head>
+    <title>{post.title}</title>
+  </head>
+
+  <body>
+    <a href="/blog">&larr; Volver al blog</a>
+
+    <h1>{post.title}</h1>
+
+    <p>{post.publishedAt}</p>
+
+    <article>
+  {
+    post.body.map((block) => {
+      if (block.style === "h2") {
+        return <h2>{block.children.map(c => c.text).join("")}</h2>;
+      }
+
+      if (block.style === "h3") {
+        return <h3>{block.children.map(c => c.text).join("")}</h3>;
+      }
+
+      return (
+        <p>
+          {block.children.map(c => c.text).join("")}
+        </p>
+      );
+    })
+  }
+</article>
+  </body>
+</html>
